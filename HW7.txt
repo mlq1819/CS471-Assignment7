@@ -1,1 +1,115 @@
 Michael Quinn
+1. Page 124 CYU( check your understand) #4, page 135 CYU #12 and page 167 exercise 3.4.
+a) Explain the distinction between the lifetime of a name-to-object binding and
+its visibility.
+An object's binding may not always be visible, even while the binding is alive; for instance, a non-global variable's binding is still active when a function is called that is is not a part of, even though the binding is invisible to the called function.
+
+b) What do we mean by the scope of a name-to-object binding?
+Scope and visibility are effectively the same; something is in scope if its binding is visible, which allows it to be called and accessed normally. A binding can only be only in scope while the binding is alive.
+
+c) Give three concrete examples drawn from programming languages with
+which you are familiar in which a variable is live but not in scope.
+Simple: one, when you call a function but the variable isn't a parameter or global; two, when a variable is in the heap and has at least one live pointer but all of its pointers are out of scope; three, right after a variable otherwise goes out of scope but hasn't yet been collected by a garbage collector.
+
+2. Consider the following pseudo code:
+
+	x : integer := 9
+	y : integer := 20
+	procedure add()
+		x := x + y
+	procedure second(P : procedure)
+		x : integer := 3
+		P()
+	procedure first()
+		y : integer := 2
+		second(add)
+
+	first()
+	write integer(x)
+   
+Consider the pseudo code officially considered.
+
+a) What does this program print if the language uses static scoping?
+9; it can't reassign x then, and any reassignment are just local copies that immediately go out of scope.
+
+b) Explain why 11 is printed out if the language uses dynamic scoping with deep binding.
+Oh jeez I have no idea, I thought it should be 5 here. I had assumed that y would become 2 in first(), and x would become 3 in second(), so that when x is assigned x+y, it would be assigned 3+2=5; then, since it doesn't go out of scope by the time it reaches write integer(x), it should still be 5.
+
+c) Explain why 9 is printed out if the language uses dynamic scoping with shallow binding.
+Well, basically, since it doesn't bind x until it is properly used, it doesn't bind x until it reaches first(); in first, it binds it and passes it and does a lot of stuff, but once first() exits, x is unbound; then when it is called again later in write integer(x), it must rebind it, and since it only has the outermost stuff to work with, it uses 9.
+
+3. Page 768 exercise 14.11. This problem includes a snippet of Perl code. Please use this code instead of the code printed in the book: (Perl program). Your answer should include both modified Perl code and speculation about nested named subroutines, as indicated in the book.
+Run the following program in Perl:
+
+sub foo {
+	my $lex = $_[0];
+	sub bar { 
+  		print "$lex\n";
+		$lex = 5;
+	};
+	print "Call to foo ";
+	print "$lex\n";
+	bar();
+}
+foo(2);
+foo(3);
+
+You may be surprised by the output. Perl 5 allows named subroutines to nest, but does not create closures for them properly. 
+Rewrite the code above to create a reference to an anonymous local subroutine and verify that it does create closures correctly. 
+Add the line use diagnostics; to the beginning of the original version and run it again. Based on the explanation this will give you, speculate as to how nested named subroutines are implemented in Perl 5.
+
+output: 
+Warning: Variable "$lex" will not stay shared at source_file.pl line 19
+Call to foo 2
+2
+Call to foo 3
+5
+
+sub foo {
+	my $lex = $_[0];
+	*bar = sub { 
+  		print "$lex\n";
+		$lex = 5;
+	};
+	print "Call to foo ";
+	print "$lex\n";
+	bar();
+}
+foo(2);
+foo(3);
+
+output:
+Warning: Subroutine main::bar redefined at source_file.pl line 6.
+Call to foo 2
+2
+Call to foo 3
+3
+
+4. Banished to the shadow realm, crossed off and OMMITted
+
+5. pg. 286 exercise 6.1:
+We noted in Section 6.1.1 that most binary arithmetic operators are left-associative in most programming languages. 
+In Section 6.1.4, however, we also noted that most compilers are free to evaluate the operands of a binary operator in either order.
+Are these statements contradictory? Why or why not?
+
+Not really; while most are left-associative in the language, the compiler itself literally can do whatever it wants; compilers are just programs that convert code into proper machine language. That said, that doesn't mean they do; they wouldn't be terribly great compilers if they didn't obey the rules of the language, but that obedience isn't enforced by the software or hardware; its enforced by the users, who might decide that a compiler that doesn't follow the rules of the language probably won't be all that useful to code in.
+
+6. pg. 287 exercise 6.7
+Is &(&i) ever valid in C? Explain.
+
+No; you can only use the & operator on bindings, but (&i) doesn't have a binding, because it's a temporary value stored in a register so it can be used or saved elsewhere. Trying to retrieve the address of the address of i wouldn't do anything even if it worked.
+
+7. pg. 287 exercise 6.9
+In Section 6.1.2 (“Orthogonality”), we noted that C uses = for assignment and == for equality testing.
+The language designers state: 
+“Since assignment is about twice as frequent as equality testing in typical C programs, it’s appropriate
+that the operator be half as long” [KR88, p. 17].
+What do you think of this rationale?
+
+I mean, makes sense, but they could have also used the @ symbol for either operator since @ isn't used for anything. 
+
+8. pg; 245 CYU 14.  What is the advantage of the definite assignment feature in a programming language?  What is the disadvantage?
+Explain the notion of definite assignment in Java and C#.
+
+Definite Assignment is a compiler-thing where is ensures that, given a variable could be referenced, it must first be assigned, and it must definitely have been assigned regardless of traditional control flow. For instance, if a variable is only assigned in conditional branches, it must only either be used in these branches, or assigned in a default, "or else" kind of branch.
+It's very useful because it ensures that otherwise unexpected errors don't pop-up during runtime, which could cause problems; that said, it disregards scenarios where future conditional branches are linked with past conditional branches, and thus, a variable assigned in one that is only used in the next would produce a Definite Assignment error despite the fact that the branch in which the variable is used could only be traversed if the variable was assigned in the first place.
